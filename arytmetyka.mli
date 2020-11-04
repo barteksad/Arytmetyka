@@ -12,7 +12,7 @@ type wartosc
 (* wartosc_dokladnosc x p = x +/- p% *)
 (* war.pocz.: p > 0                  *)
 val wartosc_dokladnosc: float -> float -> wartosc    
-
+(* 
 (* wartosc_od_do x y = [x;y]         *)
 (* war.pocz.: x <= y                 *)
 val wartosc_od_do: float -> float -> wartosc                            
@@ -39,4 +39,4 @@ val sr_wartosc:  wartosc -> float
 val plus:      wartosc -> wartosc -> wartosc  
 val minus:     wartosc -> wartosc -> wartosc 
 val razy:      wartosc -> wartosc -> wartosc  
-val podzielic: wartosc -> wartosc -> wartosc                            
+val podzielic: wartosc -> wartosc -> wartosc                             *)
