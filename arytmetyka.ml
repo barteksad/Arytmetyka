@@ -4,5 +4,5 @@ type wartosc =
     | Zbior_pusty of float;;
 
 (*
-
+check
 *)
