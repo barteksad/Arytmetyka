@@ -20,3 +20,49 @@ let wartosc_dokladnosc x  p  =
     let koniec_przedzialu = x +. abs_float x*.p /. 100. in
     Przedzial (poczatek_przedzialu,koniec_przedzialu);;
 
+let wartosc_od_do x y = 
+    Przedzial (x,y);;
+
+let wartosc_dokladna x = 
+    Przedzial (x,x);;
+
+let in_wartosc x y = 
+    match x with
+    | Zbior_pusty p -> false
+    | Przedzial (a,b) -> y>=a && y<=b
+    | Dopelnienie (a,b) -> y<=a || y>=b;;
+
+let plus x y = 
+    match x, y with
+    (* x lub y jest NaN *)
+    | Zbior_pusty p,_ -> Zbior_pusty nan
+    | _,Zbior_pusty p -> Zbior_pusty nan
+
+    (* przedział + przedział *)
+    | Przedzial(a,b),Przedzial(k,l) ->
+        let pocz = 
+        match classify_float a, classify_float k with
+        | FP_infinite,_ -> neg_infinity
+        | _,FP_infinite -> neg_infinity
+        | FP_normal,FP_normal -> a +. k 
+        in
+        let kon =
+        match classify_float b,classify_float l with
+        | FP_infinite,_ -> infinity
+        | _,FP_infinite -> infinity
+        | FP_normal,FP_normal -> b +. l
+        in
+        Przedzial (pocz,kon)
+
+    (* Dopełnienie + przedział  *)
+    | Przedzial(a,b),Dopelnienie(k,l) ->
+        if classify_float a = FP_infinite || classify_float b = FP_infinite then Przedzial(neg_infinity,infinity) else
+        if b+.k  >= l || a +. l <= k then Przedzial (neg_infinity,infinity) else
+        Dopelnienie (b+.k,a +. l)
+
+    | Dopelnienie(k,l),Przedzial(a,b) ->
+        if classify_float a = FP_infinite || classify_float b = FP_infinite then Przedzial(neg_infinity,infinity) else
+        if b+.k  >= l || a +. l <= k then Przedzial (neg_infinity,infinity) else
+        Dopelnienie (b+.k,a +. l)
+
+
