@@ -1,7 +1,8 @@
 type wartosc = 
     | Przedzial of float * float
     | Dopelnienie of float*float
-    | Zbior_pusty of float;;
+    | Przedzial_pusty
+    | Nie_liczba of float;;
 
 (*
 wartosc - główny typ danych
@@ -11,8 +12,9 @@ Przedzial - typ dla pojedyńczych przedziałów np. [1;192] , [-inf;+inf] [-inf;
 Dopelnienie - typ dla sumy dwóch przedziałów np. Depelnienie [1;2] = [-inf;1] U [2;+inf],
 [-100;0]= [-inf;-100] U [0;+inf]
 
-Zbior_pusty - typ dla nieokreślonych wyników np. 0. /. 0. = NaN
+Przedzial_pusty = [] dla 0.0/0.0
 
+Nie_liczba - typ dla nieokreślonych wyników np. sr_wartosc [-inf,inf]
 *)
 
 let wartosc_dokladnosc x  p  =
@@ -28,7 +30,8 @@ let wartosc_dokladna x =
 
 let in_wartosc x y = 
     match x with
-    | Zbior_pusty p -> false
+    | Nie_liczba p -> false
+    | Przedzial_pusty -> false
     | Przedzial (a,b) -> y>=a && y<=b
     | Dopelnienie (a,b) -> y<=a || y>=b;;
 
@@ -36,8 +39,8 @@ let plus x y =
 
     match x, y with
     (* x lub y jest NaN *)
-    | Zbior_pusty p,_ -> Zbior_pusty nan
-    | _,Zbior_pusty p -> Zbior_pusty nan
+    | Nie_liczba p,_ -> Nie_liczba nan
+    | _,Nie_liczba p -> Nie_liczba nan
 
     (* przedział + przedział *)
     | Przedzial(a,b),Przedzial(k,l) ->
@@ -66,23 +69,56 @@ let plus x y =
         if b+.k  >= l || a +. l <= k then Przedzial (neg_infinity,infinity) else
         Dopelnienie (b+.k,a +. l)
 
-    | Dopelnienie(a,b), Dopelnienie(k,l) -> Przedzial(neg_infinity,infinity);;
+    | Dopelnienie(a,b), Dopelnienie(k,l) -> Przedzial(neg_infinity,infinity)
+
+    (* Nan już rozpatrzone *)
+    | cokolwiek,Przedzial_pusty -> cokolwiek
+    | Przedzial_pusty, cokolowiek -> cokolowiek;;
 
 
 let min_wartosc x = 
     match x with
-    | Zbior_pusty p ->  Float.nan
+    | Nie_liczba p ->  Float.nan
+    | Przedzial_pusty -> infinity
     | Przedzial (a,b) -> a
     | Dopelnienie (a,b) -> neg_infinity;;
 
 let max_wartosc x = 
     match x with
-    | Zbior_pusty p -> Float.nan
+    | Nie_liczba p -> Float.nan
+    | Przedzial_pusty -> neg_infinity
     | Przedzial (a,b) -> b
     | Dopelnienie (a,b) -> infinity;;
 
 let sr_wartosc x = 
-    match min_wartosc x,max_wartosc x with
-    | _, nan -> Float.nan
-    | nan, _ -> Float.nan
-    | a,b -> (a +. b)/. 2.0;;
+    let min_x,max_x = min_wartosc x,max_wartosc x in
+    match classify_float min_x, classify_float max_x with
+
+    | FP_nan, _ -> Float.nan
+    | _, FP_nan -> Float.nan
+
+    | FP_infinite, _ -> Float.nan
+    | _,FP_infinite -> Float.nan
+
+    | _,_ -> (min_x +. max_x) /. 2.;;
+
+let rec razy x y = 
+    match x, y with
+    | Nie_liczba _,_ -> Nie_liczba Float.nan
+    | _,Nie_liczba _ -> Nie_liczba Float.nan
+    | _,Przedzial_pusty -> Przedzial_pusty
+    | Przedzial_pusty,_ -> Przedzial_pusty
+    | Przedzial(a,b),Przedzial(k,l) -> Przedzial((min (a*. k) (min (a*. l) (min (b*. k) (b*. l)))),(max (a*. k) (max (a*. l) (max (b*. k) (b*. l)))))
+    | Przedzial(a,b),Dopelnienie(k,l) ->
+        let Przedzial(pom_pocz_1,pom_kon_1), Przedzial(pom_pocz_2,pom_kon_2) = (razy (Przedzial(a,b)) (Przedzial(neg_infinity,k)) , (razy (Przedzial(a,b)) (Przedzial(l,infinity)))) in
+            let pocz =  pom_kon_1 in
+            let kon = pom_pocz_2 in
+            if pocz>= kon then Przedzial(neg_infinity,infinity) else Dopelnienie(pocz,kon)
+    | Dopelnienie(k,l),Przedzial(a,b) -> 
+        let Przedzial(pom_pocz_1,pom_kon_1), Przedzial(pom_pocz_2,pom_kon_2) = (razy (Przedzial(a,b)) (Przedzial(neg_infinity,k)) , (razy (Przedzial(a,b)) (Przedzial(l,infinity)))) in
+            let pocz =  pom_kon_1 in
+            let kon = pom_pocz_2 in
+            if pocz>= kon then Przedzial(neg_infinity,infinity) else Dopelnienie(pocz,kon);;
+
+let minus x y = 
+    plus x (razy y (Przedzial(-1.0,-1.0)));;
