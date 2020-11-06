@@ -1,5 +1,3 @@
 #use "arytmetyka.ml";;
 
-let x = wartosc_dokladnosc 10. 100.;;
-
-in_wartosc x 20.00001;;
+assert(compare (plus (Dopelnienie(-100.0,2.)) (wartosc_dokladna (-0.001))) (Dopelnienie (-100.001, 1.999)) = 0);;

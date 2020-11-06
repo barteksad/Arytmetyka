@@ -33,6 +33,7 @@ let in_wartosc x y =
     | Dopelnienie (a,b) -> y<=a || y>=b;;
 
 let plus x y = 
+
     match x, y with
     (* x lub y jest NaN *)
     | Zbior_pusty p,_ -> Zbior_pusty nan
@@ -44,13 +45,13 @@ let plus x y =
         match classify_float a, classify_float k with
         | FP_infinite,_ -> neg_infinity
         | _,FP_infinite -> neg_infinity
-        | FP_normal,FP_normal -> a +. k 
+        | _,_ -> a +. k 
         in
         let kon =
         match classify_float b,classify_float l with
         | FP_infinite,_ -> infinity
         | _,FP_infinite -> infinity
-        | FP_normal,FP_normal -> b +. l
+        | _,_ -> b +. l
         in
         Przedzial (pocz,kon)
 
@@ -65,4 +66,23 @@ let plus x y =
         if b+.k  >= l || a +. l <= k then Przedzial (neg_infinity,infinity) else
         Dopelnienie (b+.k,a +. l)
 
+    | Dopelnienie(a,b), Dopelnienie(k,l) -> Przedzial(neg_infinity,infinity);;
 
+
+let min_wartosc x = 
+    match x with
+    | Zbior_pusty p ->  Float.nan
+    | Przedzial (a,b) -> a
+    | Dopelnienie (a,b) -> neg_infinity;;
+
+let max_wartosc x = 
+    match x with
+    | Zbior_pusty p -> Float.nan
+    | Przedzial (a,b) -> b
+    | Dopelnienie (a,b) -> infinity;;
+
+let sr_wartosc x = 
+    match min_wartosc x,max_wartosc x with
+    | _, nan -> Float.nan
+    | nan, _ -> Float.nan
+    | a,b -> (a +. b)/. 2.0;;
