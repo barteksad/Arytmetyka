@@ -32,8 +32,8 @@ let in_wartosc x y =
     match x with
     | Nie_liczba p -> false
     | Przedzial_pusty -> false
-    | Przedzial (a,b) -> y>=a && y<=b
-    | Dopelnienie (a,b) -> y<=a || y>=b;;
+    | Przedzial (a,b) -> y>=(a -. Float.epsilon) && y<=(b +. Float.epsilon)
+    | Dopelnienie (a,b) -> y<=(a +. Float.epsilon) || y>=(b -. Float.epsilon);;
 
 let plus x y = 
 
@@ -61,12 +61,12 @@ let plus x y =
     (* Dopełnienie + przedział  *)
     | Przedzial(a,b),Dopelnienie(k,l) ->
         if classify_float a = FP_infinite || classify_float b = FP_infinite then Przedzial(neg_infinity,infinity) else
-        if b+.k  >= l || a +. l <= k then Przedzial (neg_infinity,infinity) else
+        if b+.k  >= l && a +. l <= k then Przedzial (neg_infinity,infinity) else
         Dopelnienie (b+.k,a +. l)
 
     | Dopelnienie(k,l),Przedzial(a,b) ->
         if classify_float a = FP_infinite || classify_float b = FP_infinite then Przedzial(neg_infinity,infinity) else
-        if b+.k  >= l || a +. l <= k then Przedzial (neg_infinity,infinity) else
+        if b+.k  >= l && a +. l <= k then Przedzial (neg_infinity,infinity) else
         Dopelnienie (b+.k,a +. l)
 
     | Dopelnienie(a,b), Dopelnienie(k,l) -> Przedzial(neg_infinity,infinity)
@@ -109,21 +109,48 @@ let rec razy x y =
     | _,Nie_liczba _ -> Nie_liczba Float.nan
     | _,Przedzial_pusty -> Przedzial_pusty
     | Przedzial_pusty,_ -> Przedzial_pusty
-    | Przedzial(a,b),Przedzial(k,l) -> Przedzial((min (a*. k) (min (a*. l) (min (b*. k) (b*. l)))),(max (a*. k) (max (a*. l) (max (b*. k) (b*. l)))))
+    (* | Przedzial(a,b),Przedzial(k,l) -> Przedzial((min (a*. k) (min (a*. l) (min (b*. k) (b*. l)))),(max (a*. k) (max (a*. l) (max (b*. k) (b*. l))))) *)
+    | Przedzial(a,b),Przedzial(k,l) -> 
+        if b < 0.0 && l < 0.0 then Przedzial(b *. l, a*. k) else
+        if a > 0.0 && k > 0.0 then Przedzial(a *. k,b*.l) else
+        if b < 0.0 && k > 0.0 then Przedzial(l *. a, b*. k) else
+        if a > 0.0 && l < 0.0 then Przedzial( k *. b,a*. l) else
+        Przedzial((min (a*. k) (min (a*. l) (min (b*. k) (b*. l)))),(max (a*. k) (max (a*. l) (max (b*. k) (b*. l)))))
+
+
     | Przedzial(a,b),Dopelnienie(k,l) ->
         let Przedzial(pom_pocz_1,pom_kon_1), Przedzial(pom_pocz_2,pom_kon_2) = (razy (Przedzial(a,b)) (Przedzial(neg_infinity,k)) , (razy (Przedzial(a,b)) (Przedzial(l,infinity)))) in
-            let pocz =  pom_kon_1 in
-            let kon = pom_pocz_2 in
-            if pocz>= kon then Przedzial(neg_infinity,infinity) else Dopelnienie(pocz,kon)
+            if pom_pocz_1 = neg_infinity && pom_kon_2 = infinity then if pom_kon_1 > pom_pocz_2 then Przedzial(neg_infinity,infinity) else Dopelnienie(pom_kon_1,pom_pocz_2) else
+            (*if pom_kon_1 = infinity && pom_pocz_2 = neg_infinity then if*) if pom_kon_1 < pom_pocz_2 then Przedzial(neg_infinity,infinity) else Dopelnienie(pom_kon_2,pom_pocz_1)
+
     | Dopelnienie(k,l),Przedzial(a,b) -> 
+
         let Przedzial(pom_pocz_1,pom_kon_1), Przedzial(pom_pocz_2,pom_kon_2) = (razy (Przedzial(a,b)) (Przedzial(neg_infinity,k)) , (razy (Przedzial(a,b)) (Przedzial(l,infinity)))) in
-            let pocz =  pom_kon_1 in
-            let kon = pom_pocz_2 in
-            if pocz>= kon then Przedzial(neg_infinity,infinity) else Dopelnienie(pocz,kon)
+            if pom_pocz_1 = neg_infinity && pom_kon_2 = infinity then if pom_kon_1 > pom_pocz_2 then Przedzial(neg_infinity,infinity) else Dopelnienie(pom_kon_1,pom_pocz_2) else
+            (*if pom_kon_1 = infinity && pom_pocz_2 = neg_infinity then if*) if pom_kon_1 < pom_pocz_2 then Przedzial(neg_infinity,infinity) else Dopelnienie(pom_kon_2,pom_pocz_1)
+
+
+
+
+
+
     | Dopelnienie(k,l),Dopelnienie(a,b) -> 
-        let Przedzial(pom_pocz_1,pom_kon_1), Przedzial(pom_pocz_2,pom_kon_2) = (razy (Przedzial(neg_infinity,k)) (Dopelnienie(a,b)) , (razy (Przedzial(l,infinity)) (Dopelnienie(a,b)))) in
+        let wynik1, wynik2 = (razy (Przedzial(neg_infinity,k)) (Dopelnienie(a,b)) , (razy (Przedzial(l,infinity)) (Dopelnienie(a,b)))) in
+        match wynik1,wynik2 with
+        | Przedzial(pom_pocz_1,pom_kon_1),Przedzial(pom_pocz_2,pom_kon_2) ->
+            if pom_pocz_1 < 0. && pom_kon_2 > 0. then if pom_kon_1 >= pom_pocz_2 then Przedzial(neg_infinity,infinity) else Dopelnienie(pom_kon_1,pom_kon_2) else
+            if pom_kon_2 >= pom_pocz_1 then Przedzial(neg_infinity,infinity) else Dopelnienie(pom_kon_2,pom_kon_1)
+        | Przedzial(pom_pocz_1,pom_kon_1), Dopelnienie(pom_pocz_2,pom_kon_2) ->
+            if pom_pocz_1 <= pom_pocz_2 then if pom_kon_1>= pom_kon_2 then Przedzial(neg_infinity,infinity) else Dopelnienie(pom_kon_1,pom_kon_2) else Dopelnienie(pom_pocz_2,pom_pocz_1)
+        | Dopelnienie(pom_pocz_2,pom_kon_2),Przedzial(pom_pocz_1,pom_kon_1) ->
+            if pom_pocz_1 <= pom_pocz_2 then if pom_kon_1>= pom_kon_2 then Przedzial(neg_infinity,infinity) else Dopelnienie(pom_kon_1,pom_kon_2) else Dopelnienie(pom_pocz_2,pom_pocz_1)
+        | Dopelnienie(pom_pocz_1,pom_kon_1),Dopelnienie(pom_pocz_2,pom_kon_2) ->
+            let nowy_pocz,nowy_kon = max pom_pocz_1 pom_pocz_2, min pom_kon_1 pom_kon_2 in
+            if nowy_pocz>=nowy_kon then Przedzial(neg_infinity,infinity) else Dopelnienie(nowy_pocz,nowy_kon);;
+
+        (* let Przedzial(pom_pocz_1,pom_kon_1), Przedzial(pom_pocz_2,pom_kon_2) = (razy (Przedzial(neg_infinity,k)) (Dopelnienie(a,b)) , (razy (Przedzial(l,infinity)) (Dopelnienie(a,b)))) in
         if pom_pocz_1 < 0. && pom_kon_2 > 0. then if pom_kon_1 >= pom_pocz_2 then Przedzial(neg_infinity,infinity) else Dopelnienie(pom_kon_1,pom_kon_2) else
-        if pom_kon_2 >= pom_pocz_1 then Przedzial(neg_infinity,infinity) else Dopelnienie(pom_kon_2,pom_kon_1);;
+        if pom_kon_2 >= pom_pocz_1 then Przedzial(neg_infinity,infinity) else Dopelnienie(pom_kon_2,pom_kon_1);; *)
 
 
 let minus x y = 
@@ -137,5 +164,9 @@ let podzielic x y =
     | _,Przedzial_pusty -> Przedzial_pusty
     | Przedzial_pusty,_ -> Przedzial_pusty
     | _,Przedzial(0.0,0.0) -> Nie_liczba Float.nan
+    | _,Przedzial(0.,a) -> razy x (Przedzial((Float.succ 0.0),infinity))
+    | _,Przedzial(a,0.0) -> razy x (Przedzial(neg_infinity,(Float.pred 0.0)))
     | _,Przedzial(a,b) -> if (a *. b) < 0.0 then razy x (Dopelnienie(1.0 /. a,1.0 /. b)) else razy x (Przedzial(1.0 /. a,1.0 /. b)) 
-    | _,Dopelnienie(a,b) -> if (a *. b) < 0.0 then razy x (Przedzial(1.0 /. a, 1.0 /. b)) else razy x (Przedzial(neg_infinity,infinity));;
+
+    (* | _,Przedzial(a,b) -> razy x (Przedzial(1.0 /. a,1.0 /. b))  *)
+    | _,Dopelnienie(a,b) -> razy x (Przedzial(a,b));;
