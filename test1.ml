@@ -4,9 +4,7 @@
 (* Copyright (C) 2017 Mateusz Gienieczko     *)
 
 open Arytmetyka
-
 let a = wartosc_od_do 3. 7.;;                (* [3., 7.]                      *)
-
 assert(min_wartosc a = 3.0);;
 assert(max_wartosc a = 7.0);;
 assert(in_wartosc a 4.);;
@@ -24,7 +22,8 @@ let c = podzielic a b;;                      (* [-inf, -1.5] U [0.6, inf]     *)
 assert(not (in_wartosc c 0.));;
 assert(in_wartosc c 100.);;
 
-let d = podzielic c b;;                      (* [-inf, -0.3] U [0.12, inf]    *)
+
+let d = podzielic c b;;                 (*   [-inf, -0.3] U [0.12, inf]    *)
 
 assert(compare (sr_wartosc d) nan = 0);;
 assert(in_wartosc d (-3. /. 10.));;
@@ -40,7 +39,7 @@ assert(in_wartosc e 2.12);;
 assert(not (in_wartosc e 1.700000000001));;
 assert(not (in_wartosc e 2.119999999999));;
 
-let f = razy d b;;                           (* [-inf, inf]                   *)
+let f = razy d b;;                           (*[-inf, inf] *)                 
 
 assert(in_wartosc f 1000000.231232333);;
 assert(in_wartosc f (-3.14159));;

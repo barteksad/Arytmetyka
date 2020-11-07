@@ -72,8 +72,8 @@ let plus x y =
     | Dopelnienie(a,b), Dopelnienie(k,l) -> Przedzial(neg_infinity,infinity)
 
     (* Nan już rozpatrzone *)
-    | cokolwiek,Przedzial_pusty -> cokolwiek
-    | Przedzial_pusty, cokolowiek -> cokolowiek;;
+    | cokolwiek,Przedzial_pusty -> Przedzial_pusty
+    | Przedzial_pusty, cokolowiek -> Przedzial_pusty;;
 
 
 let min_wartosc x = 
@@ -102,6 +102,7 @@ let sr_wartosc x =
 
     | _,_ -> (min_x +. max_x) /. 2.;;
 
+
 let rec razy x y = 
     match x, y with
     | Nie_liczba _,_ -> Nie_liczba Float.nan
@@ -118,7 +119,23 @@ let rec razy x y =
         let Przedzial(pom_pocz_1,pom_kon_1), Przedzial(pom_pocz_2,pom_kon_2) = (razy (Przedzial(a,b)) (Przedzial(neg_infinity,k)) , (razy (Przedzial(a,b)) (Przedzial(l,infinity)))) in
             let pocz =  pom_kon_1 in
             let kon = pom_pocz_2 in
-            if pocz>= kon then Przedzial(neg_infinity,infinity) else Dopelnienie(pocz,kon);;
+            if pocz>= kon then Przedzial(neg_infinity,infinity) else Dopelnienie(pocz,kon)
+    | Dopelnienie(k,l),Dopelnienie(a,b) -> 
+        let Przedzial(pom_pocz_1,pom_kon_1), Przedzial(pom_pocz_2,pom_kon_2) = (razy (Przedzial(neg_infinity,k)) (Dopelnienie(a,b)) , (razy (Przedzial(l,infinity)) (Dopelnienie(a,b)))) in
+        if pom_pocz_1 < 0. && pom_kon_2 > 0. then if pom_kon_1 >= pom_pocz_2 then Przedzial(neg_infinity,infinity) else Dopelnienie(pom_kon_1,pom_kon_2) else
+        if pom_kon_2 >= pom_pocz_1 then Przedzial(neg_infinity,infinity) else Dopelnienie(pom_kon_2,pom_kon_1);;
+
 
 let minus x y = 
     plus x (razy y (Przedzial(-1.0,-1.0)));;
+
+
+let podzielic x y = 
+    match x, y with
+    | Nie_liczba _,_ -> Nie_liczba Float.nan
+    | _,Nie_liczba _ -> Nie_liczba Float.nan
+    | _,Przedzial_pusty -> Przedzial_pusty
+    | Przedzial_pusty,_ -> Przedzial_pusty
+    | _,Przedzial(0.0,0.0) -> Nie_liczba Float.nan
+    | _,Przedzial(a,b) -> if (a *. b) < 0.0 then razy x (Dopelnienie(1.0 /. a,1.0 /. b)) else razy x (Przedzial(1.0 /. a,1.0 /. b)) 
+    | _,Dopelnienie(a,b) -> if (a *. b) < 0.0 then razy x (Przedzial(1.0 /. a, 1.0 /. b)) else razy x (Przedzial(neg_infinity,infinity));;
