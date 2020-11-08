@@ -35,7 +35,7 @@ assert (is_nan (min_wartosc i) && is_nan (sr_wartosc i) && is_nan (max_wartosc i
 assert ((min_wartosc k, max_wartosc k, sr_wartosc k) = (-30., 36., 3.));
 assert ((min_wartosc n, max_wartosc n, sr_wartosc n) = (0., infinity, infinity));
 assert ((min_wartosc o, max_wartosc o, sr_wartosc o) = (neg_infinity, 0., neg_infinity));
-assert ((min_wartosc p, max_wartosc p, is_nan (sr_wartosc p)) = (neg_infinity, infinity, true));
+assert ((min_wartosc p, max_wartosc p, is_nan (sr_wartosc p)) = (neg_infinity, infinity ,true));
 assert ((min_wartosc q, max_wartosc q, is_nan (sr_wartosc q)) = (neg_infinity, infinity, true));
 assert ((min_wartosc r, max_wartosc r, is_nan (sr_wartosc r)) = (neg_infinity, infinity, true));
 assert ((min_wartosc t, max_wartosc t, sr_wartosc t) = (neg_infinity, 0., neg_infinity));;

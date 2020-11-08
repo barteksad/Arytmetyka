@@ -97,8 +97,9 @@ let sr_wartosc x =
     | FP_nan, _ -> Float.nan
     | _, FP_nan -> Float.nan
 
-    | FP_infinite, _ -> Float.nan
-    | _,FP_infinite -> Float.nan
+    | FP_infinite, FP_infinite -> Float.nan
+    | _,FP_infinite -> infinity
+    | FP_infinite,_ -> neg_infinity
 
     | _,_ -> (min_x +. max_x) /. 2.;;
 
@@ -109,13 +110,21 @@ let rec razy x y =
     | _,Nie_liczba _ -> Nie_liczba Float.nan
     | _,Przedzial_pusty -> Przedzial_pusty
     | Przedzial_pusty,_ -> Przedzial_pusty
+    | Przedzial(0.0,0.0),_-> Przedzial(Float.zero,Float.zero)
+    | _, Przedzial(0.0,0.0) ->  Przedzial(Float.zero,Float.zero)
     (* | Przedzial(a,b),Przedzial(k,l) -> Przedzial((min (a*. k) (min (a*. l) (min (b*. k) (b*. l)))),(max (a*. k) (max (a*. l) (max (b*. k) (b*. l))))) *)
     | Przedzial(a,b),Przedzial(k,l) -> 
-        if b < 0.0 && l < 0.0 then Przedzial(b *. l, a*. k) else
-        if a > 0.0 && k > 0.0 then Przedzial(a *. k,b*.l) else
-        if b < 0.0 && k > 0.0 then Przedzial(l *. a, b*. k) else
-        if a > 0.0 && l < 0.0 then Przedzial( k *. b,a*. l) else
-        Przedzial((min (a*. k) (min (a*. l) (min (b*. k) (b*. l)))),(max (a*. k) (max (a*. l) (max (b*. k) (b*. l)))))
+        let a = if a = neg_infinity then Float.succ neg_infinity else a in
+        let b = if b = infinity then Float.pred infinity else b in
+        let k = if k = neg_infinity then Float.succ neg_infinity else k in
+        let l = if l = infinity then Float.pred infinity else l in
+
+        if b < Float.zero && l < Float.zero then Przedzial(b *. l, a*. k) else
+        if a > Float.zero && k > Float.zero then Przedzial(a *. k,b*.l) else
+        if b < Float.zero && k > Float.zero then Przedzial(l *. a, b*. k) else
+        if a > Float.zero && l < Float.zero then Przedzial( k *. b,a*. l) else
+        let pocz,kon = (min (a*. k) (min (a*. l) (min (b*. k) (b*. l)))),(max (a*. k) (max (a*. l) (max (b*. k) (b*. l)))) in
+        if in_wartosc (Przedzial(pocz,pocz)) 0.0 then Przedzial(0.0,kon) else if in_wartosc (Przedzial(kon,kon)) 0.0 then Przedzial(pocz,0.0) else Przedzial(pocz,kon)
 
 
     | Przedzial(a,b),Dopelnienie(k,l) ->
@@ -164,9 +173,13 @@ let podzielic x y =
     | _,Przedzial_pusty -> Przedzial_pusty
     | Przedzial_pusty,_ -> Przedzial_pusty
     | _,Przedzial(0.0,0.0) -> Nie_liczba Float.nan
-    | _,Przedzial(0.,a) -> razy x (Przedzial((Float.succ 0.0),infinity))
-    | _,Przedzial(a,0.0) -> razy x (Przedzial(neg_infinity,(Float.pred 0.0)))
-    | _,Przedzial(a,b) -> if (a *. b) < 0.0 then razy x (Dopelnienie(1.0 /. a,1.0 /. b)) else razy x (Przedzial(1.0 /. a,1.0 /. b)) 
+    | _,Przedzial(0.0,a) -> if a = infinity then razy x (Przedzial((Float.succ Float.zero),infinity)) else razy x (Przedzial(1. /. a,infinity))
+    | _,Przedzial(a,0.0) -> if a = neg_infinity then razy x (Przedzial(neg_infinity,(Float.pred Float.zero))) else razy x (Przedzial(neg_infinity,1. /.a))
+    | _,Przedzial(a,b) -> 
+        let pocz = if a = neg_infinity then (Float.pred Float.zero) else 1.0 /. a in
+        let kon = if b = infinity then (Float.succ Float.zero) else 1.0 /. b in
+        if a < 0. && b > 0. then
+        razy x (Dopelnienie(pocz,kon)) else razy x (Przedzial(kon,pocz))
 
     (* | _,Przedzial(a,b) -> razy x (Przedzial(1.0 /. a,1.0 /. b))  *)
     | _,Dopelnienie(a,b) -> razy x (Przedzial(a,b));;
