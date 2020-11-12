@@ -8,7 +8,6 @@ type wartosc
 (* Implicite zakładamy, że wszystkie argumenty typu float są liczbami *)
 (* rzeczywistymi, tzn. są różne od infinity, neg_infinity i nan.      *)
 
-
 (* wartosc_dokladnosc x p = x +/- p% *)
 (* war.pocz.: p > 0                  *)
 val wartosc_dokladnosc: float -> float -> wartosc    
