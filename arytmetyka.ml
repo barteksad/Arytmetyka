@@ -17,6 +17,8 @@ Przedzial_pusty = [] dla 0.0/0.0
 Nie_liczba - typ dla nieokreślonych wyników np. sr_wartosc [-inf,inf]
 *)
 
+let epsilon = 4.94065645841e-324;;
+
 let wartosc_dokladnosc x  p  =
     let poczatek_przedzialu = x -. abs_float x *. p /. 100. in
     let koniec_przedzialu = x +. abs_float x *. p /. 100. in
@@ -32,8 +34,8 @@ let in_wartosc x y =
     match x with
     | Nie_liczba p -> false
     | Przedzial_pusty -> false
-    | Przedzial (a,b) -> y>=(a -. Float.epsilon) && y<=(b +. Float.epsilon)
-    | Dopelnienie (a,b) -> y<=(a +. Float.epsilon) || y>=(b -. Float.epsilon);;
+    | Przedzial (a,b) -> y>=(a -.  epsilon ) && y<=(b +.  epsilon )
+    | Dopelnienie (a,b) -> y<=(a +.  epsilon ) || y>=(b -.  epsilon );;
 
 let plus x y = 
 
@@ -80,14 +82,14 @@ let plus x y =
 
 let min_wartosc x = 
     match x with
-    | Nie_liczba p ->  Float.nan
+    | Nie_liczba p ->   nan 
     | Przedzial_pusty -> infinity
     | Przedzial (a,b) -> a
     | Dopelnienie (a,b) -> neg_infinity;;
 
 let max_wartosc x = 
     match x with
-    | Nie_liczba p -> Float.nan
+    | Nie_liczba p ->  nan 
     | Przedzial_pusty -> neg_infinity
     | Przedzial (a,b) -> b
     | Dopelnienie (a,b) -> infinity;;
@@ -96,10 +98,10 @@ let sr_wartosc x =
     let min_x,max_x = min_wartosc x,max_wartosc x in
     match classify_float min_x, classify_float max_x with
 
-    | FP_nan, _ -> Float.nan
-    | _, FP_nan -> Float.nan
+    | FP_nan, _ ->  nan 
+    | _, FP_nan ->  nan 
 
-    | FP_infinite, FP_infinite -> Float.nan
+    | FP_infinite, FP_infinite ->  nan 
     | _,FP_infinite -> infinity
     | FP_infinite,_ -> neg_infinity
 
@@ -108,22 +110,22 @@ let sr_wartosc x =
 
 let rec razy x y = 
     match x, y with
-    | Nie_liczba _,_ -> Nie_liczba Float.nan
-    | _,Nie_liczba _ -> Nie_liczba Float.nan
+    | Nie_liczba _,_ -> Nie_liczba  nan 
+    | _,Nie_liczba _ -> Nie_liczba  nan 
     | _,Przedzial_pusty -> Przedzial_pusty
     | Przedzial_pusty,_ -> Przedzial_pusty
-    | Przedzial(0.0,0.0),_-> Przedzial(Float.zero,Float.zero)
-    | _, Przedzial(0.0,0.0) ->  Przedzial(Float.zero,Float.zero)
+    | Przedzial(0.0,0.0),_-> Przedzial( 0.0 , 0.0 )
+    | _, Przedzial(0.0,0.0) ->  Przedzial( 0.0 , 0.0 )
 
     | Przedzial(a,b),Przedzial(k,l) -> 
         let mul x1 x2 = 
         if (classify_float x1 = FP_infinite && x2 = 0.0) ||  (classify_float x2 = FP_infinite && x1 = 0.0) 
             then 0.0 
         else (x1 *. x2) in
-        if b < Float.zero && l < Float.zero then Przedzial(  mul b l,  mul a k) else
-        if a > Float.zero && k > Float.zero then Przedzial(  mul a  k, mul b l) else
-        if b < Float.zero && k > Float.zero then Przedzial(  mul l  a,  mul b  k) else
-        if a > Float.zero && l < Float.zero then Przedzial(  mul k  b, mul a  l) else
+        if b <  0.0  && l <  0.0  then Przedzial(  mul b l,  mul a k) else
+        if a >  0.0  && k >  0.0  then Przedzial(  mul a  k, mul b l) else
+        if b <  0.0  && k >  0.0  then Przedzial(  mul l  a,  mul b  k) else
+        if a >  0.0  && l <  0.0  then Przedzial(  mul k  b, mul a  l) else
         let pocz,kon = (min (mul a  k) (min (mul a   l) (min ( mul b  k) ( mul b  l)))),(max ( mul a  k) (max ( mul a  l) (max ( mul b  k) ( mul b  l)))) in
         if in_wartosc (Przedzial(pocz,pocz)) 0.0 
             then Przedzial(0.0,kon) 
@@ -206,32 +208,32 @@ let minus x y =
 
 let podzielic x y = 
     match x, y with
-    | Nie_liczba _,_ -> Nie_liczba Float.nan
-    | _,Nie_liczba _ -> Nie_liczba Float.nan
+    | Nie_liczba _,_ -> Nie_liczba  nan 
+    | _,Nie_liczba _ -> Nie_liczba  nan 
 
     | _,Przedzial_pusty -> Przedzial_pusty
     | Przedzial_pusty,_ -> Przedzial_pusty
 
-    | _,Przedzial(0.0,0.0) -> Nie_liczba Float.nan
+    | _,Przedzial(0.0,0.0) -> Nie_liczba  nan 
 
     | _,Przedzial(0.0,a) -> 
         if a = infinity 
-            then razy x (Przedzial((Float.succ Float.zero),infinity)) 
+            then razy x (Przedzial((0.0 +. epsilon ),infinity)) 
         else razy x (Przedzial(1. /. a,infinity))
 
     | _,Przedzial(a,0.0) -> 
         if a = neg_infinity 
-            then razy x (Przedzial(neg_infinity,(Float.pred Float.zero))) 
+            then razy x (Przedzial(neg_infinity,( 0.0 -. epsilon ))) 
         else razy x (Przedzial(neg_infinity,1. /.a))
 
     | _,Przedzial(a,b) -> 
         let pocz = 
             if a = neg_infinity 
-                then (Float.pred Float.zero) 
+                then (0.0 -. epsilon ) 
             else 1.0 /. a in
         let kon = 
             if b = infinity 
-                then (Float.succ Float.zero) 
+                then (0.0 +. epsilon ) 
             else 1.0 /. b in
 
         if a < 0. && b > 0.
