@@ -17,7 +17,7 @@ Przedzial_pusty = [] dla 0.0/0.0
 Nie_liczba - typ dla nieokreślonych wyników np. sr_wartosc [-inf,inf]
 *)
 
-let epsilon = 4.94065645841e-324;;
+let epsilon = 2.22044604925031308e-16;;
 
 let wartosc_dokladnosc x  p  =
     let poczatek_przedzialu = x -. abs_float x *. p /. 100. in
