@@ -135,8 +135,10 @@ let rec razy x y =
         else Przedzial(pocz,kon)
 
 
-    | Przedzial(a,b),Dopelnienie(k,l) ->
-        let Przedzial(pom_pocz_1,pom_kon_1), Przedzial(pom_pocz_2,pom_kon_2) = (razy (Przedzial(a,b)) (Przedzial(neg_infinity,k)) , (razy (Przedzial(a,b)) (Przedzial(l,infinity)))) in
+    | Przedzial(a,b),Dopelnienie(k,l) ->(
+        let wyn1,wyn2 = (razy (Przedzial(a,b)) (Przedzial(neg_infinity,k)) , (razy (Przedzial(a,b)) (Przedzial(l,infinity)))) in
+        match wyn1 ,wyn2 with
+        | Przedzial(pom_pocz_1,pom_kon_1), Przedzial(pom_pocz_2,pom_kon_2) ->
             if pom_pocz_1 = neg_infinity && pom_kon_2 = infinity 
                 then if pom_kon_1 > pom_pocz_2 
                     then Przedzial(neg_infinity,infinity) 
@@ -145,10 +147,13 @@ let rec razy x y =
             if pom_kon_1 < pom_pocz_2 
                 then Przedzial(neg_infinity,infinity) 
             else Dopelnienie(pom_kon_2,pom_pocz_1)
+        | _,_ -> assert false)
 
-    | Dopelnienie(k,l),Przedzial(a,b) -> 
+    | Dopelnienie(k,l),Przedzial(a,b) -> (
 
-        let Przedzial(pom_pocz_1,pom_kon_1), Przedzial(pom_pocz_2,pom_kon_2) = (razy (Przedzial(a,b)) (Przedzial(neg_infinity,k)) , (razy (Przedzial(a,b)) (Przedzial(l,infinity)))) in
+        let wyn1,wyn2 = (razy (Przedzial(a,b)) (Przedzial(neg_infinity,k)) , (razy (Przedzial(a,b)) (Przedzial(l,infinity)))) in
+        match wyn1,wyn2 with
+        | Przedzial(pom_pocz_1,pom_kon_1), Przedzial(pom_pocz_2,pom_kon_2) ->
             if pom_pocz_1 = neg_infinity && pom_kon_2 = infinity 
                 then if pom_kon_1 > pom_pocz_2 
                     then Przedzial(neg_infinity,infinity) 
@@ -162,11 +167,7 @@ let rec razy x y =
             if pom_kon_1 < pom_pocz_2 
                 then Przedzial(neg_infinity,infinity) 
             else Dopelnienie(pom_kon_2,pom_pocz_1)
-
-
-
-
-
+        | _,_ -> assert false)
 
     | Dopelnienie(k,l),Dopelnienie(a,b) -> 
         let wynik1, wynik2 = (razy (Przedzial(neg_infinity,k)) (Dopelnienie(a,b)) , (razy (Przedzial(l,infinity)) (Dopelnienie(a,b)))) in
@@ -199,7 +200,8 @@ let rec razy x y =
             let nowy_pocz,nowy_kon = max pom_pocz_1 pom_pocz_2, min pom_kon_1 pom_kon_2 in
             if nowy_pocz>=nowy_kon 
                 then Przedzial(neg_infinity,infinity) 
-            else Dopelnienie(nowy_pocz,nowy_kon);;
+            else Dopelnienie(nowy_pocz,nowy_kon)
+        | _,_ -> assert false;;
 
 
 let minus x y = 
